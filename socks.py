@@ -21,16 +21,17 @@ class socks():
     """Provides a simple SOCKS5H implementation"""
     version = 5
     failcodes = {
-            0: 'success',
-            1: 'general SOCKS server failure',
-            2: 'connection not allowed by ruleset',
-            3: 'network unreachable',
-            4: 'host unreachable',
-            5: 'connection refused',
-            6: 'TTL expired',
-            7: 'command not supported',
-            8: 'address type not supported',
-            }
+        0: 'success',
+        1: 'general SOCKS server failure',
+        2: 'connection not allowed by ruleset',
+        3: 'network unreachable',
+        4: 'host unreachable',
+        5: 'connection refused',
+        6: 'TTL expired',
+        7: 'command not supported',
+        8: 'address type not supported',
+    }
+
     def __init__(self, h='', p=0, user=None, passwd=None):
         """setup the initiate state"""
         self.set_host(h)
@@ -41,6 +42,7 @@ class socks():
             self.set_pass(passwd)
         else:
             self.methods = [0,]
+
     def set_host(self, h=None):
         """set the host we will ask the socks server to connect to"""
         if h != None:
@@ -48,10 +50,12 @@ class socks():
             if len(h) > 255:
                 raise Exception('Hostname must be less than 256 bytes: got %d bytes' % len(h))
             self.h = h
+
     def set_port(self, p=None):
         """set the port we will ask the socks server to connect to"""
         if p != None:
             self.p = int(p)
+
     def set_user(self, s=None):
         """set the username to authenticate with, enable socksauth"""
         if s != None:
@@ -60,6 +64,7 @@ class socks():
                 raise Exception('Username must be less than 256 bytes: got %d bytes' % len(user))
             self.user = user
             self.set_auth(True)
+
     def set_pass(self, s=None):
         """set the password to authenticate with, enable socksauth"""
         if s != None:
@@ -68,12 +73,14 @@ class socks():
                 raise Exception('Password must be less than 256 bytes: got %d bytes' % len(passwd))
             self.passwd = passwd
             self.set_auth(True)
+
     def set_auth(self, b=False):
         """toggle if we will avertise user/pass auth"""
         if b:
             self.methods = [2,0]
         else:
             self.methods = [0,]
+
     def send_all(self, s, payload):
         """ugly hack to send all"""
         sent = 0
@@ -81,16 +88,21 @@ class socks():
             tmp = s.send(payload[sent:])
             if tmp > 0:
                 sent += tmp
+
     def recv_all(self, s, buflen):
         """ugly hack to recv all"""
         tmp = ''
         while len(tmp) < buflen:
             tmp += s.recv(buflen - len(tmp))
         return tmp
+
     def dial(self, s):
         """use open socket s to negotiate a socks connection"""
+        if self.host == None or self.port == 0:
+            raise Exception('Destination is not set')
         self.negotiate_auth(s)
         self.negotiate_connection(s)
+
     def negotiate_auth(self, s):
         """negotiate an authentication method"""
         payload = struct.pack('!BB', self.version, len(self.methods))
@@ -104,6 +116,7 @@ class socks():
             raise Exception('Unsupported authentication type: %d' % m)
         if m is 2:
             self.userpassauth(s)
+
     def userpassauth(self, s):
         """handle username and password authentication"""
         payload  = struct.pack('!BB', 1, len(self.user))
@@ -116,9 +129,11 @@ class socks():
             raise Exception('Invalid SOCKS User/Pass version: %d' % v)
         if s != 0:
             raise Exception('Invalid SOCKS User/Pass credentials: %d' % status)
+
     def conn_fail(self, r):
         """report why the connection failed by status code"""
         return self.failcodes.get(r, "unknown")
+
     def negotiate_connection(self, s):
         """negotiate the socks connection to our chosen target"""
         payload  = struct.pack("!BBBB", self.version, 1, 0, 3)
